@@ -5,33 +5,49 @@ package net.degoes.essentials
 object types {
   type ??? = Nothing
 
+
+  // Colours = {x | x is a colour}
+  // { p : p is a person in the room without black hair }
+  // Colours = { x : x is a colour }
+
+  val int: Int = 42 // not how colon is a type description operation same as set builder notation above
+
   //
   // EXERCISE 1
   //
   // List all values of the type `Unit`.
   //
-  val UnitValues: Set[Unit] = ???
+  val UnitValues: Set[Unit] = Set(())
+
+  // empty parameter list and unit have same syntax
+  // type Unit is Unit . Value Unit is ()
 
   //
   // EXERCISE 2
   //
   // List all values of the type `Nothing`.
   //
-  val NothingValues: Set[Nothing] = ???
+  val NothingValues: Set[Nothing] = Set.empty
+
+  // Nothing = { }
+  // val example: Nothing = <cannot put anything here>
+//  val example: Nothing = ???
+//  val example2: Nothing = (throw ex) // act of throwing scala assigns value of nothing
+  // lazy val example: Nothing = example // will cause stack overflow
 
   //
   // EXERCISE 3
   //
   // List all values of the type `Boolean`.
   //
-  val BoolValues: Set[Boolean] = ???
+  val BoolValues: Set[Boolean] = Set(true, false)
 
   //
   // EXERCISE 4
   //
   // List all values of the type `Either[Unit, Boolean]`.
   //
-  val EitherUnitBoolValues: Set[Either[Unit, Boolean]] = ???
+  val EitherUnitBoolValues: Set[Either[Unit, Boolean]] = Set(Left(()), Right(false), Right(true))
 
   //
   // EXERCISE 5
@@ -39,14 +55,24 @@ object types {
   // List all values of the type `(Boolean, Boolean)`.
   //
   val TupleBoolBoolValues: Set[(Boolean, Boolean)] =
-    ???
+  Set(
+    (false, false),
+    (false, true),
+    (true, false),
+    (true, true)
+  )
 
   //
   // EXERCISE 6
   //
   // List all values of the type `Either[Either[Unit, Unit], Unit]`.
   //
-  val EitherEitherUnitUnitUnitValues: Set[Either[Either[Unit, Unit], Unit]] = ???
+  val EitherEitherUnitUnitUnitValues: Set[Either[Either[Unit, Unit], Unit]] =
+  Set(
+    Left(Left(())),
+    Left(Right(())),
+    Right(())
+  )
 
   //
   // EXERCISE 7
@@ -57,7 +83,14 @@ object types {
   //
   // List all the elements in `A * B`.
   //
-  val AProductB: Set[(Boolean, String)] = ???
+  val AProductB: Set[(Boolean, String)] = {
+    val A = Set(true, false)
+    val B = Set("red", "green", "blue")
+    for {
+      a <- A
+      b <- B
+    } yield (a, b)
+  }
 
   //
   // EXERCISE 8
@@ -68,7 +101,30 @@ object types {
   //
   // List all the elements in `A + B`.
   //
-  val ASumB: Set[Either[Boolean, String]] = ???
+  val ASumB: Set[Either[Boolean, String]] =
+  Set(
+    Left(true),
+    Left(false),
+    Right("red"),
+    Right("green"),
+    Right("blue")
+  )
+
+  val ASumB2: Set[Either[Boolean, String]] =
+    Set(true, false).map(Left(_)) ++ Set("red", "green", "blue").map(Right(_))
+
+// /  sealed trait Either[A, B]
+//  case class Left[A, B](value: A) extends Either[A, B]
+//  case class Right[A, B](value: B) extends Either[A, B]
+
+  sealed trait JobTitle // this will be an n-way sum type
+  // case classes or case objects or sealed traits can be in sum type
+  // size of sum set is not connected to number of terms inside set.
+  // minimum size of n-way set is n
+  object Manager extends JobTitle
+  object Peon extends JobTitle
+  object Programmer extends JobTitle
+  case class SalesPerson(level: Int) extends JobTitle
 
   //
   // EXERCISE 9
@@ -76,8 +132,8 @@ object types {
   // Create a product type of `Int` and `String`, representing the age and
   // name of a person.
   //
-  type Person1 = ???
-  final case class Person2(/*  */)
+  type Person1 = (Int, String)
+  final case class Person2(age: Int, name: String)
 
   //
   // EXERCISE 10
@@ -94,8 +150,11 @@ object types {
   // Prove that `A * 0` is equivalent to `0` by implementing the following two
   // functions.
   //
-  def to2[A](t: (A, Nothing)): Nothing = ???
-  def from2[A](n: Nothing): (A, Nothing) = ???
+  // Nothing is a sub type of every other type which allows you to use anything
+  def to2[A](t: (A, Nothing)): Nothing = t._2
+  def from2[A](n: Nothing): (A, Nothing) = (n, n)
+
+  def magicalConversion[A](n: Nothing): A = n // no values of nothing exist so this is ok
 
   //
   // EXERCISE 12
@@ -103,8 +162,10 @@ object types {
   // Create a sum type of `Int` and `String` representing the identifier of
   // a robot (a number) or the identifier of a person (a name).
   //
-  type Identifier1 = ???
+  type Identifier1 = (Int, String)
   sealed trait Identifier2
+  case class RobotIdentifier(id: Int) extends Identifier2
+  case class PersonIdentifier(name: String) extends Identifier2
 
   //
   // EXERCISE 13
@@ -112,8 +173,8 @@ object types {
   // Prove that `A + 0` is equivalent to `A` by implementing the following two
   // functions.
   //
-  def to3[A](t: Either[A, Nothing]): A = ???
-  def from3[A](a: A): Either[A, Nothing] = ???
+  def to3[A](t: Either[A, Nothing]): A = t.right.get
+  def from3[A](a: A): Either[A, Nothing] = Left(a)
 
   //
   // EXERCISE 14
@@ -121,7 +182,9 @@ object types {
   // Create either a sum type or a product type (as appropriate) to represent a
   // credit card, which has a number, an expiration date, and a security code.
   //
-  type CreditCard = ???
+//  type CreditCard = ???
+  case class CreditCard(number: Int, expDate: String, secCode: Int)
+  // product type becuase has to have all three definied at same time
 
   //
   // EXERCISE 15
@@ -130,7 +193,11 @@ object types {
   // payment method, which could be a credit card, bank account, or
   // cryptocurrency.
   //
-  type PaymentMethod = ???
+//  type PaymentMethod = ???
+  sealed trait PaymentMethod
+  case object BankAccount extends PaymentMethod
+  case object CryptoCurrency extends PaymentMethod
+  // ^ exclusive payment method types
 
   //
   // EXERCISE 16
@@ -138,7 +205,11 @@ object types {
   // Create either a sum type or a product type (as appropriate) to represent an
   // employee at a company, which has a title, salary, name, and employment date.
   //
-  type Employee = ???
+//  type Employee = ???
+
+  sealed trait Company
+  case object Bigdata extends Company
+  case class Employee(company: Company, title: String, salary: Int, emplymentDate: String)
 
   //
   // EXERCISE 17
@@ -148,6 +219,8 @@ object types {
   // queen, or king.
   //
   type ChessPiece = ???
+
+  // def construct(value: String): Email = ???
 
   //
   // EXERCISE 18
@@ -180,19 +253,75 @@ object types {
   // Create an ADT model of a game world, including a map, a player, non-player
   // characters, different classes of items, and character stats.
   //
-  type GameWorld = ???
+//  type GameWorld = ???
+  // example of smart constructor
+  // business goal: prevent run time representing illigal states that the business has no meaning for
+  final case class Programmer2 private(level: Int)
+  object Programmer2 {
+    def apply(level: Int): Option[Programmer2] =
+      if (level < 0) None
+      else Some(new Programmer2(level))
+  }
+
+//  case class BankAccount (
+//                         ownerId: String, // shouldn't be empty string, should it be a guid?
+//                         balance: BigDecimal, // maybe the business rule does not allow negative balance to exist
+//                         accountType: String, // should be a sum type
+//                         openedDate: java.time.Instant
+//                         )
+
+  sealed trait AccountType
+  case object CheckingAccount extends AccountType
+  case object SavingsAccount extends AccountType
+
+  case class Balance(value: BigDecimal)
+  object Balance {
+    def apply(value: BigDecimal): Option[Balance] =
+      if(value < 0) None
+      else Some(new Balance(value))
+  }
+
+//  case class OwnerId(value: String)
+//  object OwnerId {
+//    def apply(value: String): Option[OwnerId] =
+//      if(value.length)
+//  }
+
+case class BankAccount[A] (
+                         ownerId: A, // shouldn't be empty string, should it be a guid?
+                         balance: Balance, // maybe the business rule does not allow negative balance to exist
+                         accountType: AccountType, // should be a sum type
+                         openedDate: java.time.Instant
+                       )
+
+  // if the owner id is completely run time dependent, ie db manages this, then rip this dependency out of the code
+  // use polymorphism to accomplish this
+  def transfer[A](amount: BigDecimal,
+                  acc1: BankAccount[A],
+                  acc2: BankAccount[A]
+                 ) = ???
+
+
 }
 
 object functions {
   type ??? = Nothing
+
+  // Two Sets:
+  // Domain = { a1, a2, ..., an}
+  // Codomain = {b1, b2, ... bm}
+  // A function `f: Ddmain => Codomain
+  // Is a mapping from `Domain` to `Codomain`
+  // such that for every `a` in `Domain`
+  // `f(a)` is in `Codomain`.
 
   //
   // EXERCISE 1
   //
   // Convert the following non-function into a function.
   //
-  def parseInt1(s: String): Int = s.toInt
-  def parseInt2(s: String): ??? = ???
+  def parseInt1(s: String): Int = s.toInt // this is a lie - not total
+  def parseInt2(s: String): Option[Int] = scala.util.Try(s.toInt).toOption
 
   //
   // EXERCISE 2
@@ -200,15 +329,20 @@ object functions {
   // Convert the following non-function into a function.
   //
   def arrayUpdate1[A](arr: Array[A], i: Int, f: A => A): Unit =
-    arr.update(i, f(arr(i)))
-  def arrayUpdate2[A](arr: Array[A], i: Int, f: A => A): ??? = ???
+    arr.update(i, f(arr(i))) // 1. can throw exception (i outside boundary of array) - not total
+                             // 2. has a side effect
+                             // if return type is Unit then implementation should just be ()
+//  def arrayUpdate2[A](arr: Array[A], i: Int, f: A => A): Array[A] =
+//                               if(i >= 0 && i < arr.size) {
+//                                 arr.updated(i, f(arr(i)))
+//                               }else arr
 
   //
   // EXERCISE 3
   //
   // Convert the following non-function into a function.
   //
-  def divide1(a: Int, b: Int): Int = a / b
+  def divide1(a: Int, b: Int): Int = a / b //divide by zero - not total
   def divide2(a: Int, b: Int): ??? = ???
 
   //
@@ -221,7 +355,7 @@ object functions {
     val newId = id
     id += 1
     newId
-  }
+  } // has a side effect
   def freshId2(/* ??? */): (Int, Int) = ???
 
   //
@@ -230,7 +364,7 @@ object functions {
   // Convert the following non-function into a function.
   //
   import java.time.LocalDateTime
-  def afterOneHour1: LocalDateTime = LocalDateTime.now.plusHours(1)
+  def afterOneHour1: LocalDateTime = LocalDateTime.now.plusHours(1) // non deterministic - push now higher (solve the problem at a high level, all lowel level code does not get complex and can be tested.)
   def afterOneHour2(/* ??? */): LocalDateTime = ???
 
   //
@@ -262,21 +396,23 @@ object functions {
     coffee
   }
   final case class Charge(account: Account, amount: Double)
-  def buyCoffee2(account: Account): ??? = ???
-
+  def buyCoffee2(account: Account): (Coffee, Charge) = { //push the processor.charge problem higher
+    val coffee = Coffee()
+    (coffee, Charge(account, coffee.price))
+  }
   //
   // EXERCISE 8
   //
   // Implement the following function under the Scalazzi subset of Scala.
   //
-  def printLine(line: String): Unit = ???
+  def printLine(line: String): Unit = ()
 
   //
   // EXERCISE 9
   //
   // Implement the following function under the Scalazzi subset of Scala.
   //
-  def readLine: String = ???
+  def readLine: String = "foo" // type signature tells us that it is a constant
 
   //
   // EXERCISE 10
@@ -291,14 +427,19 @@ object functions {
   // Rewrite the following non-function `printer1` into a pure function, which
   // could be used by pure or impure code.
   //
-  def printer1(): Unit = {
+  def printer1(): Unit = { // side effects / non pure
     println("Welcome to the help page!")
     println("To list commands, type `commands`.")
     println("For help on a command, type `help <command>`")
     println("To exit the help page, type `exit`.")
   }
   def printer2[A](println: String => A, combine: (A, A) => A): A =
-    ???
+    Seq(
+        "Welcome to the help page!",
+        "To list commands, type `commands`.",
+        "For help on a command, type `help <command>`",
+        "To exit the help page, type `exit`.",
+    ).map(println).reduce(combine)
 
   //
   // EXERCISE 12
