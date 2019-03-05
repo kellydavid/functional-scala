@@ -2,6 +2,8 @@
 
 package net.degoes.essentials
 
+import net.degoes.essentials.tc_motivating.LessThan
+
 object types {
   type ??? = Nothing
 
@@ -1142,7 +1144,9 @@ object typeclasses {
 
       sort1(lessThan) ++ List(x) ++ sort1(notLessThan)
   }
-  def sort2[A: Ord](l: List[A]): List[A] = ???
+  def sort2[A: Ord](l: List[A]): List[A] = {
+    l.sortWith(implicitly[Ord[A]].compare(_, _) != GT)
+  }
 
   //
   // EXERCISE 2
@@ -1160,13 +1164,22 @@ object typeclasses {
   object PathLike {
     def apply[A](implicit A: PathLike[A]): PathLike[A] = A
   }
+
   sealed trait MyPath
+  case class Node(parent: MyPath, name: String) extends MyPath
+  case object RootNode extends MyPath
+
   object MyPath {
     implicit val MyPathPathLike: PathLike[MyPath] =
       new PathLike[MyPath] {
-        def child(parent: MyPath, name: String): MyPath = ???
-        def parent(node: MyPath): Option[MyPath] = ???
-        def root: MyPath = ???
+        def child(parent: MyPath, name: String): MyPath = {
+          Node(parent, name)
+        }
+        def parent(node: MyPath): Option[MyPath] = node match {
+          case Node(parent, _) => Some(parent)
+          case RootNode => None
+        }
+        def root: MyPath = RootNode
       }
     }
 
@@ -1177,16 +1190,24 @@ object typeclasses {
   //
   implicit val FilePathLike: PathLike[java.io.File] = ???
 
+//  implicit val FilePathLike: PathLike[java.io.File] = new PathLike[java.io.File] {
+//    override def child(parent: File, name: String): File = new java.io.File(parent, name)
+//    override def parent(node: File): Option[File] = Option(node.getParentFile)
+//    override def root: File = new java.io.File("/")
+//  }
+
   //
   // EXERCISE 4
   //
   // Create two laws for the `PathLike` type class.
   //
   trait PathLikeLaws[A] extends PathLike[A] {
-    def law1: Boolean = ???
+    // trying to get root of parent should return none
+    def law1: Boolean = parent(root) == None
 
+    // transitivity law
     def law2(node: A, name: String, assertEquals: (A, A) => Boolean): Boolean =
-      ???
+      parent(child(node, name)) == node
   }
 
   //
