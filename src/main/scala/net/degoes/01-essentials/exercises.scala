@@ -228,11 +228,11 @@ object types {
   // Create a "smart constructor" for `Programmer` that only permits levels
   // that are non-negative.
   //
-  final case class Programmer private (level: Int) 
-  object Programmer {
-    def apply(level: Int): Option[Programmer] = 
-      ???
-  }
+//  final case class Programmer private (level: Int)
+//  object Programmer {
+//    def apply(level: Int): Option[Programmer] =
+//      ???
+//  }
 
   //
   // EXERCISE 19
@@ -287,19 +287,19 @@ object types {
 //      if(value.length)
 //  }
 
-case class BankAccount[A] (
-                         ownerId: A, // shouldn't be empty string, should it be a guid?
-                         balance: Balance, // maybe the business rule does not allow negative balance to exist
-                         accountType: AccountType, // should be a sum type
-                         openedDate: java.time.Instant
-                       )
+//case class BankAccount[A] (
+//                         ownerId: A, // shouldn't be empty string, should it be a guid?
+//                         balance: Balance, // maybe the business rule does not allow negative balance to exist
+//                         accountType: AccountType, // should be a sum type
+//                         openedDate: java.time.Instant
+//                       )
 
   // if the owner id is completely run time dependent, ie db manages this, then rip this dependency out of the code
   // use polymorphism to accomplish this
-  def transfer[A](amount: BigDecimal,
-                  acc1: BankAccount[A],
-                  acc2: BankAccount[A]
-                 ) = ???
+//  def transfer[A](amount: BigDecimal,
+//                  acc1: BankAccount[A],
+//                  acc2: BankAccount[A]
+//                 ) = ???
 
 
 }
@@ -477,16 +477,36 @@ object functions {
       canvas.map(_.toList).toList
   }
   def draw2(size: Int /* ... */): ??? = ???
+
+  case class CanvasState(x: Int, y: Int, bitmap: List[List[Double]])
+  type DrawCommand = CanvasState => CanvasState
+  // could then pass a list of draw commands to draw()
+
+
 }
 
 object higher_order {
+
+//  def foo(x: Int): Int = ??? // monomorphic
+//  def foo[A](x: Int): Int = ??? // polymorphic function
+//
+//  case class Person(name: String, age: Age)
+//  case class Age(value: Int)
+
+//  String => Age
+//  String => Int
+//  Int => Age
+
+//  def joinAge(f: String => Int, g: Int => Age): String = (s: String) => g(f(s)) OR Age(42)
+//  def compose[]()
+//  the function knows too much ^
+
   //
   // EXERCISE 1
   //
   // Implement the following higher-order function.
   //
-  def fanout[A, B, C](f: A => B, g: A => C): A => (B, C) =
-    ???
+  def fanout[A, B, C](f: A => B, g: A => C): A => (B, C) = (a: A) => (f(a), g(a))
 
   //
   // EXERCISE 2
@@ -494,15 +514,14 @@ object higher_order {
   // Implement the following higher-order function.
   //
   def cross[A, B, C, D](f: A => B, g: C => D): (A, C) => (B, D) =
-    ???
+    (a: A, c: C) => (f(a), g(c))
 
   //
   // EXERCISE 3
   //
   // Implement the following higher-order function.
   //
-  def either[A, B, C](f: A => B, g: C => B): Either[A, C] => B =
-    ???
+  def either[A, B, C](f: A => B, g: C => B): Either[A, C] => B = ???
 
   //
   // EXERCISE 4
@@ -526,19 +545,41 @@ object higher_order {
   // Implement the following higher-order function. After you implement
   // the function, interpret its meaning.
   //
+//  def alt[E1, E2, A, B](l: Parser[E1, A], r: E1 => Parser[E2, B]): Parser[(E1, E2), Either[A, B]] = {
+//    Parser[(E1, E2), Either[A, B]](run = (s: String) => {???}
+
+//  def alt[E1, E2, A, B](l: Parser[E1, A], r: E1 => Parser[E2, B]):
+//    Parser[(E1, E2), Either[A, B]] =
+//     ???
+
+//  def alt[E1, E2, A, B](l: Parser[E1, A], r: E1 => Parser[E2, B]):
+//  Parser[(E1, E2), Either[A, B]] =
+//    Parser[(E1, E2), Either[A, B]](
+//      (input: String) => (??? : Either[(E1, E2), (String, Either[A, B])])
+//    )
+
   def alt[E1, E2, A, B](l: Parser[E1, A], r: E1 => Parser[E2, B]):
-    Parser[(E1, E2), Either[A, B]] =
-      ???
+  Parser[(E1, E2), Either[A, B]] =
+    Parser[(E1, E2), Either[A, B]](
+      (input: String) =>
+        l.run(input) match {
+          case Left(e1) => r(e1).run(input) match {
+            case Left(e2) => Left((e1, e2))
+            case Right((in, b)) => Right((in, Right(b)))
+          }
+          case Right((in, a)) => Right(in, Left(a))
+        }
+    )
 
   case class Parser[+E, +A](run: String => Either[E, (String, A)])
   object Parser {
-    final def fail[E](e: E): Parser[E, Nothing] =
+    final def fail[E](e: E): Parser[E, Nothing] = // we know this cannot fail looking at the second type parameter of the return type
       Parser(_ => Left(e))
 
     final def point[A](a: => A): Parser[Nothing, A] =
       Parser(input => Right((input, a)))
 
-    final def char: Parser[Unit, Char] =
+    final def char: Parser[Unit, Char] = // there is only one failure scenario, this is why unit is error type
       Parser(input =>
         if (input.length == 0) Left(())
         else Right((input.drop(1), input.charAt(0))))
@@ -567,7 +608,16 @@ object poly_functions {
   //
   object repeat {
     def apply[A](n: Int)(a: A, f: A => A): A =
-      ???
+//      n match {
+//
+//        case != 0 => apply(n)
+//      }
+
+      n match {
+        case 0 => a
+        case m => apply(m - 1)(f(a), f)
+      }
+//      Range(0, n).map()
   }
   repeat[   Int](100)( 0, _ +   1) // 100
   repeat[String]( 10)("", _ + "*") // "**********"
@@ -596,14 +646,14 @@ object poly_functions {
   //
   val Data =
     "poweroutage;2018-09-20;level=20" :: Nil
-  val By: String => String =
+  val ByDate: String => String =
     (data: String) => data.split(";")(1)
   val Reducer: (String, List[String]) => String =
     (date, events) =>
       "On date " +
         date + ", there were " +
         events.length + " power outages"
-  val Expected =
+  val ExpectedResults =
     Map("2018-09-20" ->
       "On date 2018-09-20, there were 1 power outages")
   def groupBy1(
@@ -611,8 +661,8 @@ object poly_functions {
     by: String => String)(
       reducer: (String, List[String]) => String):
       Map[String, String] =
-        ???
-  groupBy1(Data, By)(Reducer) == Expected
+    l.map((s: String) => (ByDate(s), s) ).groupBy(_._1).map(x => (x._1, Reducer(x._1, x._2.map(_._2))))
+  groupBy1(Data, ByDate)(Reducer) == ExpectedResults
 
   //
   // EXERCISE 6
@@ -622,11 +672,56 @@ object poly_functions {
   //
   object groupBy2 {
 
+    def apply[A, B, C](
+                  events: List[A],
+                  by: A => B)(
+                  reducer: (B, List[A]) => C): Map[B, C] =
+//      events.map(e => (by(e), e)).groupBy(_._1).map(x => (x._1, reducer(x._1, x._2)))
+    events.groupBy(by).map{ case (b: B, as: List[A]) => (b, reducer(b, as)) }
+//      events.groupBy(by).map(case (k,v) => (k, reducer())
+
   }
   // groupBy2(Data, By)(Reducer) == Expected
 }
 
 object higher_kinded {
+  // A type is a set of values
+  // { 1, "foo", true, List(1, 2, 3) }
+  // { Int, Boolean, String, ..., } can have mathematical set of types but not in scala
+  // * = { Int, Boolean, String, ..., }
+  //   = { x | x is a type in scala }
+
+  // List : * => *
+  // List(Int) = List[Int]
+  // List(String) = List[String]
+  //
+
+  // * => * = { f | f is a type constructor that takes 1 type}
+  //        = { List, Set, Option, Future, Try, ... }
+  //
+
+  // [*, *] => * = { f | f is a type constructor that takes 2 types }
+  //
+  //             = { Map, Either, Function, Tuple2, .... }
+  //
+
+  // f: Int
+
+  //
+  // (* => *) => * // higher order kind aka higher kinded type
+  //               = { Functor, Monad, ... }
+  //
+  def foo[A[_], B] = ???
+  trait Foo[A[_], B]
+
+
+//  type Bar = Foo[List, Int] // Wont work as we are passing * as parameter (List)
+  type Bar = Foo[List, Int]
+  val foo2: (Int, Int) => Int = ???
+//  foo2((i: Int) => + 1, 2)
+
+  val myTest: List[Int] = ???
+
   type ?? = Nothing
   type ???[A] = Nothing
   type ????[A, B] = Nothing
@@ -650,7 +745,7 @@ object higher_kinded {
   // Identify a type constructor that takes two type parameters of kind `*` (i.e.
   // has kind `[*, *] => *`), and place your answer inside the square brackets.
   //
-  type Answer2 = `[*, *] => *`[????]
+//  type Answer2 = `[*, *] => *` [???]
 
   //
   // EXERCISE 3
@@ -671,8 +766,8 @@ object higher_kinded {
   //
   // Create a new type that has kind `(* => *) => *`.
   //
-  type NewType1 /* ??? */
-  type Answer5 = `(* => *) => *`[?????]
+  type NewType1 [A[_[_]]] /* ??? */
+//  type Answer5 = `(* => *) => *` ??? //[A[_[_]]]
 
   //
   // EXERCISE 6
@@ -728,7 +823,10 @@ object higher_kinded {
     // This method will return the number of `A`s inside `fa`.
     def size[A](fa: F[A]): Int
   }
-  val ListSized: Sized[List] = ???
+  val ListSized: Sized[List] =
+    new Sized[List] {
+      def size[A](fa: List[A]): Int = fa.length
+    }
 
   //
   // EXERCISE 9
@@ -736,8 +834,11 @@ object higher_kinded {
   // Implement `Sized` for `Map`, partially applied with its first type
   // parameter to `String`.
   //
-  val MapStringSized: Sized[Map[String, ?]] =
-    ???
+//  type A = Sized[Map] //
+//  val MapStringSized: Sized[Map[String, ?]] = ???
+//  new Sized[Map[String, ?]] {
+//
+//  }
 
   //
   // EXERCISE 10
@@ -766,8 +867,25 @@ object tc_motivating {
 
   A type class instance is an instance of a type class for a given
   set of types.
-
   */
+
+//  sealed trait Ordering
+//  case object LessThan extends Ordering
+//  case object EqualTo extends Ordering
+//  case object GreaterThan extends Ordering
+//  trait Comparable[A] {
+//    def compare(that: A): Ordering
+//  }
+//
+//  case class Person(name: String, age: Int) extends Comparable[Person] {
+//    def compare(that: Person): Ordering = {
+//      if(this.age < that.age) LessThan
+//      EqualTo
+//    }
+//  }
+//
+//  def sort[A <: Comparable[A]](list: List[A]): List[A] = ???
+
   /**
    * All implementations are required to satisfy the transitivityLaw.
    *
